@@ -13,7 +13,11 @@ composer update
 
 ## Running
 
-./vendor/bin/phpunit tests/
+./vendor/bin/phpunit
+
+To get code coverage working, you will need the php XDebug extension installed. See: https://xdebug.org/docs/install
+
+Then run /vendor/bin/phpunit --coverage-text=./tests/coverage.txt
 
 
 ## Some notes on thinking throughout
@@ -24,3 +28,4 @@ composer update
 * Step 4: Extend simple case
 * Add check for self-referencing
 * Add check for circular dependency. Realised that if we are asked to move a dependency into a breaking order it means a circular reference must exist
+* Added code coverage check - 100%
