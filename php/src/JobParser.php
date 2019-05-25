@@ -5,10 +5,10 @@ class JobParser
     /**
      * Turn the given job string into an ordered hash
      *
-     * @input String $jobstr - list of job codes and dependencies
-     * @output array $jobs - the sequence that the jobs should occur in,
+     * @param String $jobstr - list of job codes and dependencies
+     * @return array $jobs - the sequence that the jobs should occur in,
      *
-     * @throw \Exception if the input job list is invalid
+     * @throws \Exception if the input job list is invalid
      */
     public function parse($jobstr)
     {
@@ -36,9 +36,18 @@ class JobParser
     /**
      * Insert the given job and dependency into the given array
      * in a sensible order
+     *
+     * @param array &$arr the output array
+     * @param string $job the job code
+     * @param string $dependency the dependency, if one exists
      */
     private function insertSorted(&$arr, $job, $dependency)
     {
+        if ($job == $dependency)
+        {
+            throw new \InvalidArgumentException("Jobs cant depend on themselves");
+        }
+
         // if a no dependency, and not already inserted; push into array
         // and return
 
@@ -195,7 +204,7 @@ class JobParser
                 // if we get here; must be end of string
                 // so add to array regardless
 
-                $result[$key] = $value;
+                $result[$key] = $char;
             }
         }
 
