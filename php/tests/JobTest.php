@@ -25,6 +25,31 @@ class JobTest extends TestCase
     }
 
     /**
+     * Test that input not matching the expected pattern fails elegantly
+     */
+    public function testInvalidArgumentFails()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $parser = new JobParser();
+        $res = $parser->parse("
+            a=>bc
+            d=>a
+        ");
+    }
+
+    /**
+     * Test that random input string fails elegantly
+     */
+    public function testRandomStrFails()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $parser = new JobParser();
+        $res = $parser->parse("not a valid string");
+    }
+
+    /**
      * Test a => returns sequence of job a
      */
     public function testSimple()
@@ -46,7 +71,7 @@ class JobTest extends TestCase
         $parser = new JobParser();
         $res = $parser->parse("a=>b=>c=>");
 
-        $this->assertEquals(count($res), 3);
+        $this->assertEquals(3, count($res));
         $this->assertTrue(in_array("a", $res));
         $this->assertTrue(in_array("b", $res));
         $this->assertTrue(in_array("c", $res));
@@ -63,7 +88,7 @@ class JobTest extends TestCase
             b =>
         ");
 
-        $this->assertEquals(count($res), 2);
+        $this->assertEquals(2, count($res));
         $this->assertTrue(in_array("a", $res));
         $this->assertTrue(in_array("b", $res));
     }
@@ -87,7 +112,7 @@ class JobTest extends TestCase
 
         $this->assertTrue($cidx < $bidx);
         $this->assertNotNull($aidx);
-        $this->assertEquals(count($res), 3);
+        $this->assertEquals(3, count($res));
     }
 
     /**
@@ -116,13 +141,13 @@ class JobTest extends TestCase
         $this->assertTrue($cidx < $bidx);
         $this->assertTrue($bidx < $eidx);
         $this->assertTrue($aidx < $didx);
-        $this->assertEquals(count($res), 6);
+        $this->assertEquals(6, count($res));
     }
 
     /**
      * Test that input with self-referencing job returns an error
      */
-    public function testSelfDepencyFails()
+    public function testSelfDependencyFails()
     {
         $this->expectException(\InvalidArgumentException::class);
 
