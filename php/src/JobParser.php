@@ -27,7 +27,7 @@ class JobParser
 
         foreach ($converted as $job => $dependency)
         {
-            $this->insertSorted($result, $job, $dependency);
+            $this->insertSorted($result, $job, $dependency, $converted);
         }
 
         return ($result);
@@ -40,8 +40,9 @@ class JobParser
      * @param array &$arr the output array
      * @param string $job the job code
      * @param string $dependency the dependency, if one exists
+     * @param array the input array
      */
-    private function insertSorted(&$arr, $job, $dependency)
+    private function insertSorted(&$arr, $job, $dependency, $input)
     {
         if ($job == $dependency)
         {
@@ -103,14 +104,43 @@ class JobParser
             else
             {
                 // job and dependency both in array already
-                // TODO check for circular dependency here
 
                 $jidx = array_search($job, $arr);
                 $didx = array_search($dependency, $arr);
 
                 if ($jidx < $didx)
                 {
-                    // job is before dependency; needs work
+                    // shift dependency down in front of job, moving jobs in between
+                    // up the array
+
+                    for ($i = $didx;$i>$jidx;$i--)
+                    {
+                        $arr[$i] = $arr[$i-1];
+                    }
+
+                    $arr[$jidx] = $dependency;
+
+
+                    // check if we are breaking the rules by doing this; if so, a circular dependency exists.
+
+                    for ($i = 0;$i<count($arr);$i++)
+                    {
+                        $jidx = $i;
+                        $depend = $input[$arr[$jidx]];
+
+                        if (isset($depend))
+                        {
+                            for ($j=$i;$j<count($arr);$j++)
+                            {
+                                // check if dependency is in array after job
+
+                                if ($arr[$j] == $depend)
+                                {
+                                    throw new \InvalidArgumentException("Circular dependency");
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -145,6 +145,36 @@ class JobTest extends TestCase
     }
 
     /**
+     * Test a chain of dependencies
+     */
+    public function testDependencyChain()
+    {
+        $parser = new JobParser();
+        $res = $parser->parse("
+            a => f
+            b => a
+            c => a
+            d =>
+            e => a
+            f => d
+        ");
+
+        $aidx = array_search("a", $res);
+        $bidx = array_search("b", $res);
+        $cidx = array_search("c", $res);
+        $didx = array_search("d", $res);
+        $eidx = array_search("e", $res);
+        $fidx = array_search("f", $res);
+
+        $this->assertTrue($fidx < $aidx);
+        $this->assertTrue($aidx < $bidx);
+        $this->assertTrue($aidx < $cidx);
+        $this->assertTrue($aidx < $eidx);
+        $this->assertTrue($didx < $fidx);
+        $this->assertTrue($didx < $aidx);
+    }
+
+    /**
      * Test that input with self-referencing job returns an error
      */
     public function testSelfDependencyFails()
