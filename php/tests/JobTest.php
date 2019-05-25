@@ -95,7 +95,6 @@ class JobTest extends TestCase
 
     /**
      * Test structure with one dependency - c before b containing abc
-     * @Ignore
      */
     public function testOneDependency()
     {
@@ -172,6 +171,21 @@ class JobTest extends TestCase
         $this->assertTrue($aidx < $eidx);
         $this->assertTrue($didx < $fidx);
         $this->assertTrue($didx < $aidx);
+    }
+
+    /**
+     * Test that input with a dependency that doesn't exist returns an error
+     */
+    public function testNonexistantDependencyFails()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $parser = new JobParser();
+        $res = $parser->parse("
+            a => g
+            b =>
+            c =>
+        ");
     }
 
     /**

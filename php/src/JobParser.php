@@ -44,13 +44,20 @@ class JobParser
      */
     private function insertSorted(&$arr, $job, $dependency, $input)
     {
+        // sanity check
+
         if ($job == $dependency)
         {
             throw new \InvalidArgumentException("Jobs cant depend on themselves");
         }
 
-        // if a no dependency, and not already inserted; push into array
-        // and return
+        if (isset ($dependency) && (! array_key_exists($dependency, $input)))
+        {
+            throw new \InvalidArgumentException("Dependency must be a job that exists");
+        }
+
+
+        // if no dependency and job not already inserted; push into array and return
 
         if (! isset($dependency))
         {
@@ -63,8 +70,7 @@ class JobParser
         }
 
 
-        // if dependency is not already in the array
-        // we can simply insert before the job
+        // if dependency is not already in the array can simply insert before the given job
 
         if (! in_array($dependency, $arr))
         {
@@ -77,8 +83,7 @@ class JobParser
             }
             else
             {
-                // job is already in array; shift back
-                // and insert dependency in front
+                // job is already in array; shift backwards, inserting dependency before job
 
                 $idx = array_search($job, $arr);
                 for ($i = count($arr);$i>$idx;$i--)
