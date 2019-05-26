@@ -3,10 +3,10 @@
 class JobParser
 {
     /**
-     * Turn the given job string into an ordered hash
+     * Turn the given job string into an ordered JobCollection object
      *
      * @param String $jobstr - list of job codes and dependencies
-     * @return array $jobs - the sequence that the jobs should occur in,
+     * @return JobCollection $jobs - an ordered collection of jobs
      *
      * @throws \Exception if the input job list is invalid
      */
@@ -16,155 +16,137 @@ class JobParser
 
         if ($jobstr == null || $jobstr == "")
         {
-            return array();
+            return new JobCollection();
         }
 
 
-        // convert the string into an array we can follow through
+        // convert the string into a JobCollection
 
-        $converted = $this->parseInput($jobstr);
-        $result = array();
+        $jobCollection = $this->parseJobString($jobstr);
 
-        foreach ($converted as $job => $dependency)
+        try
         {
-            $this->insertSorted($result, $job, $dependency, $converted);
+            $jobCollection->sort();
+        }
+        catch (\LogicException $e)
+        {
+            throw new \InvalidArgumentException($e->getMessage());
         }
 
-        return ($result);
+        return ($jobCollection);
     }
 
     /**
-     * Insert the given job and dependency into the given array
-     * in a sensible order
-     *
-     * @param array &$arr the output array
-     * @param string $job the job code
-     * @param string $dependency the dependency, if one exists
-     * @param array the input array
-     */
-    private function insertSorted(&$arr, $job, $dependency, $input)
-    {
-        // sanity check
-
-        if ($job == $dependency)
-        {
-            throw new \InvalidArgumentException("Jobs cant depend on themselves");
-        }
-
-        if (isset ($dependency) && (! array_key_exists($dependency, $input)))
-        {
-            throw new \InvalidArgumentException("Dependency must be a job that exists");
-        }
-
-
-        // if no dependency and job not already inserted; push into array and return
-
-        if (! isset($dependency))
-        {
-            if (! in_array($job, $arr))
-            {
-                array_push($arr, $job);
-            }
-
-            return;
-        }
-
-
-        // if dependency is not already in the array can simply insert before the given job
-
-        if (! in_array($dependency, $arr))
-        {
-            if (! in_array($job, $arr))
-            {
-                array_push($arr, $dependency);
-                array_push($arr, $job);
-
-                return;
-            }
-            else
-            {
-                // job is already in array; shift backwards, inserting dependency before job
-
-                $idx = array_search($job, $arr);
-                for ($i = count($arr);$i>$idx;$i--)
-                {
-                    $arr[$i] = $arr[$i - 1];
-                }
-
-                $arr[$idx] = $dependency;
-
-                return;
-            }
-        }
-        else
-        {
-            // dependency already in array
-
-            if (! in_array($job, $arr))
-            {
-                // job is not in array yet; simply push job onto the end of the array
-
-                array_push($arr, $job);
-            }
-            else
-            {
-                // job and dependency both in array already
-
-                $jidx = array_search($job, $arr);
-                $didx = array_search($dependency, $arr);
-
-                if ($jidx < $didx)
-                {
-                    // shift dependency down in front of job, moving jobs in between
-                    // up the array
-
-                    for ($i = $didx;$i>$jidx;$i--)
-                    {
-                        $arr[$i] = $arr[$i-1];
-                    }
-
-                    $arr[$jidx] = $dependency;
-
-
-                    // check if we are breaking the rules by doing this; if so, a circular dependency exists.
-
-                    for ($i = 0;$i<count($arr);$i++)
-                    {
-                        $jidx = $i;
-                        $depend = $input[$arr[$jidx]];
-
-                        if (isset($depend))
-                        {
-                            for ($j=$i;$j<count($arr);$j++)
-                            {
-                                // check if dependency is in array after job
-
-                                if ($arr[$j] == $depend)
-                                {
-                                    throw new \InvalidArgumentException("Circular dependency");
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Convert the input string into an array of 'job' => 'dependency'
+     * Convert the job string into an unsorted JobCollection
      *
      * @param string $jobstr
-     * @return array, unsorted job array of job => dependency
+     * @return JobCollection an unsorted Job Collection
+     *
+     * @throws InvalidArgumentException if invalid input detected
      */
-    private function parseInput($jobstr)
+    private function parseJobString($jobstr)
+    {
+        // remove whitespace and check string is valid
+
+        $jobstr = $this->cleanAndValidateJobString($jobstr);
+
+
+        // split each character into an array so we can iterate more easily
+
+        $jobarr = str_split($jobstr);
+
+        $unsortedJobs = new JobCollection();
+        $job = new Job($jobarr[0]);
+
+        for ($i=1;$i<count($jobarr);$i++)
+        {
+            $char = $jobarr[$i];
+
+            if ($char == "=")
+            {
+                // increment i to skip '>'
+
+                $i++;
+
+                continue;
+            }
+
+
+            // if this is the last element of the array, then it must be a dependency.
+            // so set dependency and exit
+
+            if ($i == count($jobarr) - 1)
+            {
+                $job->setDependency(new Job($char));
+                $unsortedJobs->addJob($job);
+
+                continue;
+            }
+
+
+            // look ahead; if next is '=' then char is a job code.
+            // otherwise, char is a dependency.
+
+            if (($jobarr[$i + 1] == "="))
+            {
+                // start of a new job. add the previous one, if it is not already added
+
+                if (! $unsortedJobs->contains($job->getCode()))
+                {
+                    $unsortedJobs->addJob($job);
+                }
+
+                $job = new Job($char);
+
+
+                // special case; if i + 3 (past the arrow) is the end of the string we should add the job now
+                // as long as it does not already contain the job
+
+                if (! array_key_exists($i + 3, $jobarr))
+                {
+                    if (! $unsortedJobs->contains($job->getCode()))
+                    {
+                        $unsortedJobs->addJob($job);
+                    }
+                }
+            }
+            else
+            {
+                $job->setDependency(new Job($char));
+                $unsortedJobs->addJob($job);
+
+                continue;
+            }
+        }
+
+
+        // catch special case of single, non-associated job
+
+        if (! $unsortedJobs->contains($jobarr[0]))
+        {
+            $unsortedJobs->addJob(new Job($jobarr[0]));
+        }
+
+        return ($unsortedJobs);
+    }
+
+    /**
+     * Clean the given job string; remove all whitespace
+     * and verify the job matches our expected pattern
+     *
+     * @param string $jobstr
+     * @return string $jobstr
+     *
+     * @throws \IllegalArgumentException if the jobstr does not match the expected pattern
+     */
+    private function cleanAndValidateJobString($jobstr)
     {
         // remove all whitespace from input string
 
         $jobstr = preg_replace('/\s*/m', '', $jobstr);
 
 
-        // check the input string matches regex; if not, fail.
+        // check the job string matches regex; if not, fail.
         // regex; match character=>[optional] OR start again (recursive)
 
         if (preg_match("/[a-zA-Z]=>(?:(?R)|[a-zA-Z]?)(?R)*$/m", $jobstr, $matches))
@@ -179,70 +161,6 @@ class JobParser
             throw new \InvalidArgumentException("Invalid input");
         }
 
-        $jobarr = str_split($jobstr);
-
-        $result = array();
-        $key    = $jobarr[0];
-        $value  = null;
-
-        for ($i=0;$i<count($jobarr);$i++)
-        {
-            $char = $jobarr[$i];
-            if ($char == "=")
-            {
-                // increment i to skip '>'
-                $i++;
-
-                continue;
-            }
-
-
-            // look-ahead. if next is '=' then current is a 'key'; otherwise
-            // current char is a 'value' (dependency)
-
-            if (array_key_exists(($i + 1), $jobarr))
-            {
-                $next = $jobarr[$i + 1];
-                if ($next == "=")
-                {
-                    // special case; if we are at => null, push now
-
-                    if (! array_key_exists(($i + 3), $jobarr))
-                    {
-                        // push existing key/value
-
-                        $result[$key] = $value;
-
-
-                        // push current char as a key
-
-                        $result[$char] = null;
-
-                        continue;
-                    }
-
-                    $result[$key] = $value;
-                    $key    = $char;
-                    $value  = null;
-
-                    continue;
-                }
-                else
-                {
-                    $value = $char;
-
-                    continue;
-                }
-            }
-            else
-            {
-                // if we get here; must be end of string
-                // so add to array regardless
-
-                $result[$key] = $char;
-            }
-        }
-
-        return ($result);
+        return ($jobstr);
     }
 }

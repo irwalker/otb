@@ -1,6 +1,6 @@
-# On the beach code challenge - IW
+# On The Beach Code Challenge - IW
 
-My code challenge for on the beach
+My code challenge for On The Beach
 
 ## Requirements
 You must have the following installed for this to work:
@@ -29,3 +29,10 @@ Then run /vendor/bin/phpunit --coverage-text=./tests/coverage.txt
 * Add check for self-referencing
 * Add check for circular dependency. Realised that if we are asked to move a dependency into a breaking order it means a circular reference must exist
 * Added code coverage check - 100%
+
+### Big Refactor ...
+
+* Encapsulated array representation of sorted jobs into JobCollection.
+* JobCollection knows how to sort itself
+* Addded two output options to JobCollection; array or string output
+* Sorting now done recursively. Made sense once everything wasn't just arrays.

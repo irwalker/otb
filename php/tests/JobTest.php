@@ -10,7 +10,8 @@ class JobTest extends TestCase
     public function testBlank()
     {
         $parser = new JobParser();
-        $res = $parser->parse("");
+        $col = $parser->parse("");
+        $res = $col->getArrayOutput();
         $this->assertEquals(array(), $res);
     }
 
@@ -20,7 +21,8 @@ class JobTest extends TestCase
     public function testNull()
     {
         $parser = new JobParser();
-        $res = $parser->parse(null);
+        $col = $parser->parse(null);
+        $res = $col->getArrayOutput();
         $this->assertEquals(array(), $res);
     }
 
@@ -55,7 +57,9 @@ class JobTest extends TestCase
     public function testSimple()
     {
         $parser = new JobParser();
-        $res = $parser->parse("a=>");
+        $col = $parser->parse("a=>");
+
+        $res = $col->getArrayOutput();
 
         $this->assertEquals(
             array("a"),
@@ -69,7 +73,8 @@ class JobTest extends TestCase
     public function testNoDependencies()
     {
         $parser = new JobParser();
-        $res = $parser->parse("a=>b=>c=>");
+        $col = $parser->parse("a=>b=>c=>");
+        $res = $col->getArrayOutput();
 
         $this->assertEquals(3, count($res));
         $this->assertTrue(in_array("a", $res));
@@ -78,15 +83,34 @@ class JobTest extends TestCase
     }
 
     /**
+     * Test that a job with multiple dependencies fails elegantly
+     */
+    public function testJobMultipleDependenciesFails()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $parser = new JobParser();
+        $col = $parser->parse("
+            a=>b
+            b=>c
+            c=>
+            g=>
+            a=>g
+        ");
+    }
+
+    /**
      * Test basic structure but with weird spacing
      */
     public function testNoDependenciesSpacing()
     {
         $parser = new JobParser();
-        $res = $parser->parse("
+        $col = $parser->parse("
             a =>
             b =>
         ");
+
+        $res = $col->getArrayOutput();
 
         $this->assertEquals(2, count($res));
         $this->assertTrue(in_array("a", $res));
@@ -104,6 +128,8 @@ class JobTest extends TestCase
             b => c
             c =>
         ");
+
+        $res = $res->getArrayOutput();
 
         $cidx = array_search("c", $res);
         $bidx = array_search("b", $res);
@@ -129,6 +155,8 @@ class JobTest extends TestCase
             f =>
         ");
 
+        $res = $res->getArrayOutput();
+
         $aidx = array_search("a", $res);
         $bidx = array_search("b", $res);
         $cidx = array_search("c", $res);
@@ -141,6 +169,22 @@ class JobTest extends TestCase
         $this->assertTrue($bidx < $eidx);
         $this->assertTrue($aidx < $didx);
         $this->assertEquals(6, count($res));
+    }
+
+    /**
+     * Test a consistently ordered string output matches expected result
+     */
+    public function testStringOutput()
+    {
+        $parser = new JobParser();
+        $col = $parser->parse("
+            a => b
+            b => c
+            c =>
+        ");
+
+        $res = $col->getStringOutput();
+        $this->assertEquals("cba", $res);
     }
 
     /**
@@ -158,6 +202,8 @@ class JobTest extends TestCase
             f => d
         ");
 
+        $res = $res->getArrayOutput();
+
         $aidx = array_search("a", $res);
         $bidx = array_search("b", $res);
         $cidx = array_search("c", $res);
@@ -171,6 +217,26 @@ class JobTest extends TestCase
         $this->assertTrue($aidx < $eidx);
         $this->assertTrue($didx < $fidx);
         $this->assertTrue($didx < $aidx);
+    }
+
+    /**
+     * Test a job input that is entirely a chain of dependencies
+     */
+    public function testEntireDependencyChain()
+    {
+        $parser = new JobParser();
+        $col = $parser->parse("
+            a => b
+            b => c
+            c => d
+            d => e
+            e => f
+            f => g
+            g =>
+        ");
+
+        $res = $col->getStringOutput();
+        $this->assertEquals("gfedcba", $res);
     }
 
     /**

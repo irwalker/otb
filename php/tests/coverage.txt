@@ -1,12 +1,16 @@
 
 
-Code Coverage Report:     
-  2019-05-25 16:25:14     
-                          
- Summary:                 
-  Classes: 100.00% (1/1)  
-  Methods: 100.00% (3/3)  
-  Lines:   100.00% (70/70)
+Code Coverage Report:      
+  2019-05-26 21:35:35      
+                           
+ Summary:                  
+  Classes: 66.67% (2/3)    
+  Methods: 88.89% (16/18)  
+  Lines:   97.12% (101/104)
 
+Job
+  Methods:  60.00% ( 3/ 5)   Lines:  76.92% ( 10/ 13)
+JobCollection
+  Methods: 100.00% (10/10)   Lines: 100.00% ( 52/ 52)
 JobParser
-  Methods: 100.00% ( 3/ 3)   Lines: 100.00% ( 70/ 70)
+  Methods: 100.00% ( 3/ 3)   Lines: 100.00% ( 39/ 39)
