@@ -10,7 +10,7 @@ An application that sorts a given list of jobs according to their dependencies.
 
 ## Requirements
 You must have the following installed for this to work:
- * [php (7+)](https://www.php.net/downloads.php)
+ * [php (7.3+)](https://www.php.net/downloads.php)
  * [composer](https://getcomposer.org/download/)
 
 ### Optional
