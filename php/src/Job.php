@@ -18,15 +18,12 @@ class Job
 
     function __construct($code, Job $dependency = null)
     {
-        // sanity check
-
-        if ($dependency && $code == $dependency->getCode())
-        {
-            throw new \InvalidArgumentException("Jobs cannot depend on themselves");
-        }
-
         $this->code = $code;
-        $this->dependency = $dependency;
+
+        if (isset($dependency))
+        {
+            $this->setDependency($dependency);
+        }
     }
 
     /**
