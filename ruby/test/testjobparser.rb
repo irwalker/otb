@@ -1,5 +1,6 @@
 require "minitest/autorun"
 require_relative '../lib/jobparser'
+require_relative '../lib/errors'
 
 class TestJobParser < MiniTest::Test
   def setup

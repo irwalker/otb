@@ -1,0 +1,2 @@
+class JobCollection
+end
